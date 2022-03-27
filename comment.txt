@@ -1,0 +1,38 @@
+sample.py
+
+the function takes as input the path of a zip file with the same format as /scratch/UN-english.txt.gz, a number n_samples of samples to return and a float between 0 and 1 that represents the proportion of those samples that will be kept for testing.
+To spare memory, we decided to limit the search for samples to the n_samples//5 first sentences. As long as in average each sentence contains more than 5 consonnants preceded by 4 or more symbols (which will be the case for most sentences of most corpuses), this choice will not be a problem. A simple correction will be necessary in the case the corpus contains mainly extremly short sentences.
+The output are two lists (of length (1-prop_test)*n_samples and prop_test*n_samples) of arrays : the columns correspond to all the encountered combinations of 4 are consecutive symbols from our text; the fifth is the first consonnant (in lower case, or converted to lower case if it was an upper case) following these symbols and belonging to the same sentence. They are recorded with the help of pickle in the files train.txt and test.txt. 
+
+We defined a helper() fonction that, given a sentence and a position, returns either None or an array containing the 4 next characters of the sentence and the first consonnant transformed to lower case (we also made this choice to limit the number of targets) that follows, starting from this position. 
+
+The function mat_4_letters_first_cons() scans the sentences from our corpus, applying the helper function on each symbol number of the sentences and concatenate the output arrays (when we get some) in one matrix, until this matrix has n_samples rows.
+
+While we are aware that the statement of the assignment says: 'any four characters', we decided to delete the digits, as they substantially increase the already large number of features, while intuitively bearing very little information for the predictions. We also get rid of the b" and the punctuation in the beginning of a sentence as well as the //n in the end.
+
+
+train.py
+
+It takes in input the name of the file where to save the model and an argument called model, which should be set to 0 to train a multinomialNB and to 1 to train an SVC with a linear kernel.
+
+test.py
+
+It returns the accuracy score of the model and three lists of tupples with each consonant and the corresponding precision, recall and f1_score.
+After running models of different sizes on both SVM and multinomialNB, we noticed:
+.For n_samples=200000, multinomialNB has an accuracy of .26, meaning that about one out of 4 of the consonnants in the test set are properly predicted.
+From the list of f1_scores, one can see that 'h' (f1_score .43), 'n' (f1_score .35) and 't' (f1_score .33) are the three consonants that our model is best at predicting.
+If we look at the precision for 'h' (.58) and the recall (.34) we can see that when the model predicts an 'h', it will be in 58% of the cases, while 34% of the 'h' in the test sample were correctly predicted.
+
+For NB, the accuracy of the model is the same, wether we train it on n_samples = 50000, 100000 or 200000.
+
+with a same size sample (50000), SVM scores better with an accuracy of .3. Unsurprisingly, it does best on the same consonants as multinomialNB. 'h' is predicted with a f1-score of .6. We did not observe any difference when moving to n_sample=100000.
+
+As SVC is long to train, we did not try any higher n_samples.
+
+perplexity.py
+
+It takes in input a sentence and the name of file where is stored the model.
+The sentence should not contain any white space because they are interpreted as another command by the prompt.
+The sentence needs to be transformed in the same way as in sample. We copied the function used in sample and we used pickle to access the OneHotEncoder defined in sample.py. Those choices are certainly not optimal, but when importing these function from sample.py, it becomes necessary to when calling perplexity from the prompt to reinter all the input that we do not need.
+
+To calculate the perplexity, we transform the sentence in an array of features coding each of the 4 symbols sequences which precede a consonant. For each we calculate the entropy based on the distribution returned by clf.predict_proba. We then take the average for all the sequences. The perplexity is 2**(this value). For a Naive Bayesian model and 20000 n_samples, we found a perplexity in the range of 8 to 10 for random sentences. The intuition is that the knowledge gained by our model allows in average to chose between 9 symbols instead of 21 in order to predict the nex consonant.
